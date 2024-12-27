@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Switch } from 'react-native';
 import * as Location from 'expo-location';
 import axios from 'axios';
 import Fontisto from 'react-native-vector-icons/Fontisto';
@@ -15,6 +15,7 @@ export default function HomeScreen() {
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [isModalVisible, setModalVisible] = useState(false);
+  const [useCelsius, setUseCelsius] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -82,6 +83,30 @@ export default function HomeScreen() {
     setModalVisible(!isModalVisible);
   };
 
+  const convertTemperature = (temp: number, toCelsius: boolean) => {
+    if (toCelsius) {
+      return Math.round((temp - 32) * 5 / 9);
+    }
+    return Math.round(temp);
+  };
+
+  const formatTextWithMaxLength = (text: string, maxLength: number) => {
+    const words = text.split(' ');
+    let formattedText = '';
+    let line = '';
+
+    words.forEach(word => {
+      if ((line + word).length > maxLength) {
+        formattedText += `${line}\n`;
+        line = '';
+      }
+      line += `${word} `;
+    });
+
+    formattedText += line.trim();
+    return formattedText;
+  };
+
   return (
     <>
       <View style={styles.container}>
@@ -90,7 +115,7 @@ export default function HomeScreen() {
             <TouchableOpacity style={styles.weatherContainer} onPress={toggleModal}>
               {getWeatherIcon(weather.properties.periods[0].shortForecast)}
               <Text style={styles.weatherText}>
-                {`Temperature: ${weather.properties.periods[0].temperature}°F`}
+                {`${convertTemperature(weather.properties.periods[0].temperature, useCelsius)}${useCelsius ? '°C' : '°F'}`}
               </Text>
             </TouchableOpacity>
             <Modal 
@@ -103,14 +128,23 @@ export default function HomeScreen() {
               backdropTransitionOutTiming={0}
               hideModalContentWhileAnimating={true} 
             >
-              <TouchableOpacity style={styles.modalContent} onPress={toggleModal}>
-                <Text style={styles.modalTitle}>Forecast</Text>
+              <TouchableOpacity style={styles.modalContent} activeOpacity={1} onPress={toggleModal}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Forecast</Text>
+                  <View style={styles.toggleContainer}>
+                    <Text style={styles.toggleLabel}>{useCelsius ? 'C' : 'F'}</Text>
+                    <Switch
+                      value={useCelsius}
+                      onValueChange={setUseCelsius}
+                    />
+                  </View>
+                </View>
                 <ScrollView>
                   {weather.properties.periods.slice(0, 10).map((period: any, index: number) => (
                     <View key={index} style={styles.forecastItem}>
                       {getWeatherIcon(period.shortForecast)}
                       <Text style={styles.forecastText}>
-                        {`${period.name}: ${period.temperature}°F - ${period.shortForecast}`}
+                        {formatTextWithMaxLength(`${period.name}: ${convertTemperature(period.temperature, useCelsius)}${useCelsius ? '°C' : '°F'} - ${period.shortForecast}`, 30)}
                       </Text>
                     </View>
                   ))}
@@ -164,10 +198,24 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
   },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 20, // Add margin to separate title from content
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  toggleLabel: {
+    fontSize: 16,
+    marginRight: 8,
+  },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 20,
   },
   forecastItem: {
     flexDirection: 'row',
@@ -177,6 +225,6 @@ const styles = StyleSheet.create({
   forecastText: {
     fontSize: 16,
     marginLeft: 10,
-    flexShrink: 1,
+    flexWrap: 'wrap', // Wrap text within the container
   },
 });

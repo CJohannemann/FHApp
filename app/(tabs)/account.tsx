@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet, Text, ImageBackground, TouchableOpacity, ScrollView } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-export default function TabTwoScreen() {
+export default function AccountScreen() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.cardContainer}>
